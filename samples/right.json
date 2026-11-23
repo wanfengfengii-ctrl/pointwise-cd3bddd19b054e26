@@ -1,0 +1,18 @@
+{
+  "machine_model": "RQ-Opt-12",
+  "catalog": {"X": "标准挑战", "Y": "校验等待"},
+  "observations": [
+    {"action": "X", "row": "white-shift-041", "reading": "17/5", "note": "换版记录在首拍出判"}
+  ],
+  "state_ids": ["new-inlet-36", "new-hold-47", "new-pass-55", "new-fail-68"],
+  "initial": [1, 0, 0, 0],
+  "transitions": {
+    "X": [[0, 0, "1/2", "1/2"], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+    "Y": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  },
+  "classification": {
+    "pass": ["new-pass-55"],
+    "fail": ["new-fail-68"],
+    "pending": ["new-inlet-36", "new-hold-47"]
+  }
+}

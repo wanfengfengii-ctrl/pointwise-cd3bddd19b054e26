@@ -1,0 +1,19 @@
+{
+  "machine_model": "RQ-Opt-12",
+  "catalog": {"X": "交换判类", "Y": "保持当前状态"},
+  "observations": [{"action": "X", "row": "mix-study-01"}],
+  "actions": ["X"],
+  "left": {
+    "state_ids": ["old-pass-1", "old-fail-1", "old-pending-1"],
+    "layers": {"A": ["1/2", 0, "1/2"], "B": [0, 1, 0], "C": [0, 0, 1]},
+    "transitions": {"X": [[0, 1, 0], [1, 0, 0], [0, 0, 1]], "Y": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]},
+    "classification": {"pass": ["old-pass-1"], "fail": ["old-fail-1"], "pending": ["old-pending-1"]}
+  },
+  "right": {
+    "state_ids": ["new-pending-2", "new-pass-2", "new-fail-2"],
+    "layers": {"C": [1, 0, 0], "B": ["1/2", 0, "1/2"], "A": [0, 1, 0]},
+    "transitions": {"Y": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "X": [[1, 0, 0], [0, 0, 1], [0, 1, 0]]},
+    "classification": {"pass": ["new-pass-2"], "fail": ["new-fail-2"], "pending": ["new-pending-2"]}
+  },
+  "right_C_with_zero_rate": [0, 1, 0]
+}

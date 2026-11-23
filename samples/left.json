@@ -1,0 +1,19 @@
+{
+  "machine_model": "RQ-Opt-12",
+  "catalog": {"X": "标准挑战", "Y": "校验等待"},
+  "observations": [
+    {"action": "Y", "row": "white-shift-031", "reading": "14/5", "note": "试验批入台"},
+    {"action": "X", "row": "white-shift-032", "reading": "16/5", "note": "首拍记录待定样本"}
+  ],
+  "state_ids": ["bench-inlet-14", "bench-hold-29", "bench-pass-42", "bench-fail-57"],
+  "initial": [1, 0, 0, 0],
+  "transitions": {
+    "X": [[0, "1/2", "1/4", "1/4"], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+    "Y": [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  },
+  "classification": {
+    "pass": ["bench-pass-42"],
+    "fail": ["bench-fail-57"],
+    "pending": ["bench-inlet-14", "bench-hold-29"]
+  }
+}
