@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 
 _VERSION = 1
+SUPPORTED_VERSIONS = (1, 2)
 _FIELDS = {'version', 'machine_model', 'model_id', 'revision_id', 'body', 'fingerprint'}
 
 
@@ -60,7 +61,7 @@ class EvidenceEnvelope:
 
 
 def _validate_identity(envelope: EvidenceEnvelope) -> None:
-    if type(envelope.version) is not int or envelope.version != _VERSION:
+    if type(envelope.version) is not int or envelope.version not in SUPPORTED_VERSIONS:
         raise ValueError('unsupported evidence version')
     model = envelope.machine_model
     if not isinstance(model, str) or not model or model != model.strip():
@@ -76,8 +77,10 @@ def _fingerprint(envelope: EvidenceEnvelope) -> str:
     return hashlib.sha256(canonical_json(envelope.identity_payload()).encode('ascii')).hexdigest()
 
 
-def seal_envelope(machine_model: str, model_id: int, revision_id: int, body: str) -> EvidenceEnvelope:
-    content = EvidenceEnvelope(_VERSION, machine_model, model_id, revision_id, body, '')
+def seal_envelope(
+    machine_model: str, model_id: int, revision_id: int, body: str, version: int = _VERSION,
+) -> EvidenceEnvelope:
+    content = EvidenceEnvelope(version, machine_model, model_id, revision_id, body, '')
     _validate_identity(content)
     return EvidenceEnvelope(**content.identity_payload(), fingerprint=_fingerprint(content))
 

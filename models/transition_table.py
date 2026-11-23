@@ -47,20 +47,27 @@ def validate_distribution(values: object, size: int, label: str = 'distribution'
     return distribution
 
 
-def build_response_table(
-    action_codes: Sequence[str], initial: object, transitions: object, state_count: int,
-) -> ResponseTable:
+def validate_action_codes(action_codes: object) -> tuple[str, ...]:
+    if not _is_sequence(action_codes) or not 2 <= len(action_codes) <= 3:
+        raise ValueError('response table requires two or three distinct action codes')
+    codes = tuple(action_codes)
+    if any(not isinstance(code, str) or not code or code != code.strip() for code in codes):
+        raise ValueError('response table requires nonempty trimmed action codes')
+    if len(set(codes)) != len(codes):
+        raise ValueError('response table requires distinct action codes')
+    return codes
+
+
+def build_transitions(
+    action_codes: Sequence[str], transitions: object, state_count: int,
+) -> tuple[tuple[str, Matrix], ...]:
     if type(state_count) is not int or not 1 <= state_count <= 6:
         raise ValueError('models require one to six states')
-    if (not _is_sequence(action_codes) or not 2 <= len(action_codes) <= 3
-            or any(not isinstance(code, str) or not code or code != code.strip() for code in action_codes)
-            or len(set(action_codes)) != len(action_codes)):
-        raise ValueError('response table requires two or three distinct action codes')
-    if not isinstance(transitions, Mapping) or set(transitions) != set(action_codes):
+    codes = validate_action_codes(action_codes)
+    if not isinstance(transitions, Mapping) or set(transitions) != set(codes):
         raise ValueError('transition actions must match the action catalog')
-    initial_distribution = validate_distribution(initial, state_count, 'initial distribution')
     tables = []
-    for code in sorted(action_codes):
+    for code in sorted(codes):
         matrix = transitions[code]
         if not _is_sequence(matrix) or len(matrix) != state_count:
             raise ValueError(f'action {code!r} must contain {state_count} rows')
@@ -68,7 +75,14 @@ def build_response_table(
             validate_distribution(row, state_count, f'{code} row {position}')
             for position, row in enumerate(matrix)
         )))
-    return ResponseTable(initial_distribution, tuple(tables))
+    return tuple(tables)
+
+
+def build_response_table(
+    action_codes: Sequence[str], initial: object, transitions: object, state_count: int,
+) -> ResponseTable:
+    initial_distribution = validate_distribution(initial, state_count, 'initial distribution')
+    return ResponseTable(initial_distribution, build_transitions(action_codes, transitions, state_count))
 
 
 def advance_distribution(mass: Distribution, matrix: Matrix) -> Distribution:

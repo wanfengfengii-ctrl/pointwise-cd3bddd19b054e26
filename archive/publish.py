@@ -29,8 +29,13 @@ def initialize_archive(connection: sqlite3.Connection) -> None:
     connection.execute('PRAGMA foreign_keys = ON')
     with connection:
         connection.execute(
+            '''CREATE TABLE IF NOT EXISTS report_identifiers (
+                report_id INTEGER PRIMARY KEY AUTOINCREMENT
+            )'''
+        )
+        connection.execute(
             '''CREATE TABLE IF NOT EXISTS reports (
-                report_id INTEGER PRIMARY KEY,
+                report_id INTEGER PRIMARY KEY REFERENCES report_identifiers(report_id),
                 machine_model TEXT NOT NULL,
                 left_receipt_id INTEGER NOT NULL REFERENCES received_evidence(receipt_id),
                 right_receipt_id INTEGER NOT NULL REFERENCES received_evidence(receipt_id),
@@ -45,6 +50,16 @@ def initialize_archive(connection: sqlite3.Connection) -> None:
                 report_id INTEGER PRIMARY KEY REFERENCES reports(report_id)
             )'''
         )
+    from archive.recipe_publish import initialize_recipe_archive
+    initialize_recipe_archive(connection)
+
+
+def next_report_id(connection: sqlite3.Connection) -> int:
+    """Allocate a globally unique report number inside the caller's transaction."""
+    if not connection.in_transaction:
+        raise ValueError('report identifiers are allocated inside the report transaction')
+    cursor = connection.execute('INSERT INTO report_identifiers DEFAULT VALUES')
+    return cursor.lastrowid
 
 
 def publish_report(
@@ -66,12 +81,12 @@ def publish_report(
     )
     with connection:
         connection.execute('BEGIN IMMEDIATE')
-        cursor = connection.execute(
-            '''INSERT INTO reports (machine_model, left_receipt_id, right_receipt_id, decision, retest_json)
-               VALUES (?, ?, ?, ?, ?)''',
-            (machine_model, request[0], request[1], decision, retest_json),
+        report_id = next_report_id(connection)
+        connection.execute(
+            '''INSERT INTO reports (report_id, machine_model, left_receipt_id, right_receipt_id, decision, retest_json)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (report_id, machine_model, request[0], request[1], decision, retest_json),
         )
-        report_id = cursor.lastrowid
         insert_report_parents(connection, report_id, parents)
         connection.execute('INSERT INTO publication_receipts (report_id) VALUES (?)', (report_id,))
     return report_id

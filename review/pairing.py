@@ -18,6 +18,8 @@ class EvidencePair:
 def resolve_pair(connection: sqlite3.Connection, left_receipt_id: int, right_receipt_id: int) -> EvidencePair:
     left = get_receipt(connection, left_receipt_id)
     right = get_receipt(connection, right_receipt_id)
+    if left.envelope.version != 1 or right.envelope.version != 1:
+        raise ValueError('the V1 comparison requires two version 1 evidence items')
     if left.envelope.machine_model != right.envelope.machine_model:
         raise ValueError('comparison requires the same machine model')
     actions = left.body.table.action_codes

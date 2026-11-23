@@ -1,15 +1,16 @@
 import sqlite3
 from dataclasses import dataclass
 
-from exchange.body import EvidenceBody, decode_body
+from exchange.body import decode_body
 from exchange.envelope import EvidenceEnvelope, verify_envelope
+from exchange.layered_body import decode_layered_body
 
 
 @dataclass(frozen=True)
 class ReceivedEvidence:
     receipt_id: int
     envelope: EvidenceEnvelope
-    body: EvidenceBody
+    body: object
 
 
 def initialize_receipts(connection: sqlite3.Connection) -> None:
@@ -22,6 +23,14 @@ def initialize_receipts(connection: sqlite3.Connection) -> None:
     )
 
 
+def decode_envelope_body(envelope: EvidenceEnvelope):
+    if envelope.version == 1:
+        return decode_body(envelope.body)
+    if envelope.version == 2:
+        return decode_layered_body(envelope.body)
+    raise ValueError('unsupported evidence version')
+
+
 def receive(
     connection: sqlite3.Connection, envelope: EvidenceEnvelope | str, expected_model: str,
 ) -> int:
@@ -32,7 +41,7 @@ def receive(
     verify_envelope(envelope)
     if envelope.machine_model != expected_model:
         raise ValueError('received evidence belongs to a different machine model')
-    decode_body(envelope.body)
+    decode_envelope_body(envelope)
     if connection.in_transaction:
         raise ValueError('receipt registration requires an idle connection')
     with connection:
@@ -52,4 +61,4 @@ def get_receipt(connection: sqlite3.Connection, receipt_id: int) -> ReceivedEvid
         raise LookupError(f'unknown evidence receipt: {receipt_id}')
     envelope = EvidenceEnvelope.from_json(row[0])
     verify_envelope(envelope)
-    return ReceivedEvidence(receipt_id, envelope, decode_body(envelope.body))
+    return ReceivedEvidence(receipt_id, envelope, decode_envelope_body(envelope))

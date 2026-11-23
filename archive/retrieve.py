@@ -3,11 +3,18 @@ import sqlite3
 
 from archive.provenance import load_report_parents
 from archive.publish import PublishedReport
+from archive.recipe_publish import retrieve_recipe_report
 
 
-def retrieve(connection: sqlite3.Connection, report_id: int) -> PublishedReport:
+def retrieve(connection: sqlite3.Connection, report_id: int):
+    """Return the fixed snapshot behind a report ID (V1 or recipe report)."""
     if type(report_id) is not int or not 1 <= report_id < 2**63:
         raise ValueError('report ID must be a positive SQLite integer')
+    recipe_row = connection.execute(
+        'SELECT 1 FROM recipe_reports WHERE report_id = ?', (report_id,),
+    ).fetchone()
+    if recipe_row is not None:
+        return retrieve_recipe_report(connection, report_id)
     row = connection.execute(
         '''SELECT reports.machine_model, reports.left_receipt_id, reports.right_receipt_id,
                   reports.decision, reports.retest_json
